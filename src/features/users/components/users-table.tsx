@@ -38,9 +38,25 @@ type DataTableProps = {
   data: User[]
   search: Record<string, unknown>
   navigate: NavigateFn
+  // Additional props for future implementation
+  isLoading?: boolean
+  currentPage?: number
+  pageSize?: number
+  totalRows?: number
+  onPageChange?: (page: number) => void
+  onPageSizeChange?: (pageSize: number) => void
+  sortBy?: string
+  sortOrder?: string
+  onSortChange?: (sortBy: string, order: 'asc' | 'desc') => void
 }
 
-export function UsersTable({ data, search, navigate }: DataTableProps) {
+export function UsersTable({ 
+  data, 
+  search, 
+  navigate
+}: DataTableProps) {
+  // Temporary: use only required props for now
+  // We'll implement the full functionality later
   // Local UI-only states
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})

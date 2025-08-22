@@ -139,6 +139,107 @@ app.delete("/api/rubrica/:id", verifyToken, async (req, res) => {
   }
 });
 
+// Users API
+app.get("/api/users", verifyToken, async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const pageSize = parseInt(req.query.pageSize) || 10;
+  const offset = (page - 1) * pageSize;
+
+  try {
+    const client = await pool.connect();
+    const sortBy = req.query.sortBy || "id";
+    const order = req.query.order || "asc";
+    const allowedSortBy = ["id", "username", "role_id"];
+    if (!allowedSortBy.includes(sortBy)) {
+      return res.status(400).send("Invalid sort column");
+    }
+
+    const result = await client.query(
+      `SELECT u.id, u.username, u.role_id, r.name as role_name 
+       FROM users u 
+       LEFT JOIN roles r ON u.role_id = r.id 
+       ORDER BY u.${sortBy} ${order.toUpperCase()} 
+       LIMIT $1 OFFSET $2`, 
+      [pageSize, offset]
+    );
+    const totalResult = await client.query("SELECT COUNT(*) FROM users");
+    const total = parseInt(totalResult.rows[0].count);
+    res.json({ data: result.rows, total });
+    client.release();
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error " + err);
+  }
+});
+
+app.post("/api/users", verifyToken, async (req, res) => {
+  const { username, password, role_id } = req.body;
+  try {
+    const client = await pool.connect();
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const result = await client.query(
+      "INSERT INTO users (username, password, role_id) VALUES ($1, $2, $3) RETURNING id, username, role_id",
+      [username, hashedPassword, role_id]
+    );
+    res.json(result.rows[0]);
+    client.release();
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error " + err);
+  }
+});
+
+app.put("/api/users/:id", verifyToken, async (req, res) => {
+  const { id } = req.params;
+  const { username, password, role_id } = req.body;
+  try {
+    const client = await pool.connect();
+    let query, params;
+    
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      query = "UPDATE users SET username = $1, password = $2, role_id = $3 WHERE id = $4 RETURNING id, username, role_id";
+      params = [username, hashedPassword, role_id, id];
+    } else {
+      query = "UPDATE users SET username = $1, role_id = $2 WHERE id = $3 RETURNING id, username, role_id";
+      params = [username, role_id, id];
+    }
+    
+    const result = await client.query(query, params);
+    res.json(result.rows[0]);
+    client.release();
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error " + err);
+  }
+});
+
+app.delete("/api/users/:id", verifyToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const client = await pool.connect();
+    await client.query("DELETE FROM users WHERE id = $1", [id]);
+    res.status(204).send();
+    client.release();
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error " + err);
+  }
+});
+
+// Roles API
+app.get("/api/roles", verifyToken, async (req, res) => {
+  try {
+    const client = await pool.connect();
+    const result = await client.query("SELECT * FROM roles ORDER BY name");
+    res.json({ data: result.rows });
+    client.release();
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error " + err);
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });

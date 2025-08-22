@@ -1,9 +1,8 @@
 import { type ColumnDef } from '@tanstack/react-table'
 import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { LongText } from '@/components/long-text'
-import { callTypes, roles } from '../data/data'
+import { roles } from '../data/data'
 import { type User } from '../data/schema'
 import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
@@ -37,12 +36,12 @@ export const usersColumns: ColumnDef<User>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: 'username',
+    accessorKey: 'id',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Username' />
+      <DataTableColumnHeader column={column} title='ID' />
     ),
     cell: ({ row }) => (
-      <LongText className='max-w-36 ps-3'>{row.getValue('username')}</LongText>
+      <div className='w-fit text-nowrap ps-3'>{row.getValue('id')}</div>
     ),
     meta: {
       className: cn(
@@ -53,75 +52,30 @@ export const usersColumns: ColumnDef<User>[] = [
     enableHiding: false,
   },
   {
-    id: 'fullName',
+    accessorKey: 'username',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Name' />
+      <DataTableColumnHeader column={column} title='Username' />
     ),
-    cell: ({ row }) => {
-      const { firstName, lastName } = row.original
-      const fullName = `${firstName} ${lastName}`
-      return <LongText className='max-w-36'>{fullName}</LongText>
-    },
+    cell: ({ row }) => (
+      <LongText className='max-w-36'>{row.getValue('username')}</LongText>
+    ),
     meta: { className: 'w-36' },
   },
   {
-    accessorKey: 'email',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Email' />
-    ),
-    cell: ({ row }) => (
-      <div className='w-fit text-nowrap'>{row.getValue('email')}</div>
-    ),
-  },
-  {
-    accessorKey: 'phoneNumber',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Phone Number' />
-    ),
-    cell: ({ row }) => <div>{row.getValue('phoneNumber')}</div>,
-    enableSorting: false,
-  },
-  {
-    accessorKey: 'status',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Status' />
-    ),
-    cell: ({ row }) => {
-      const { status } = row.original
-      const badgeColor = callTypes.get(status)
-      return (
-        <div className='flex space-x-2'>
-          <Badge variant='outline' className={cn('capitalize', badgeColor)}>
-            {row.getValue('status')}
-          </Badge>
-        </div>
-      )
-    },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id))
-    },
-    enableHiding: false,
-    enableSorting: false,
-  },
-  {
-    accessorKey: 'role',
+    accessorKey: 'role_name',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Role' />
     ),
     cell: ({ row }) => {
-      const { role } = row.original
-      const userType = roles.find(({ value }) => value === role)
-
-      if (!userType) {
-        return null
-      }
+      const roleName = row.getValue('role_name') as string
+      const userType = roles.find(({ value }) => value === roleName?.toLowerCase())
 
       return (
         <div className='flex items-center gap-x-2'>
-          {userType.icon && (
+          {userType?.icon && (
             <userType.icon size={16} className='text-muted-foreground' />
           )}
-          <span className='text-sm capitalize'>{row.getValue('role')}</span>
+          <span className='text-sm capitalize'>{roleName}</span>
         </div>
       )
     },

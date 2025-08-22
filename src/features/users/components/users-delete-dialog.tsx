@@ -2,12 +2,12 @@
 
 import { useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
-import { showSubmittedData } from '@/utils/show-submitted-data'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { type User } from '../data/schema'
+import { useUsers } from './users-provider'
 
 type UserDeleteDialogProps = {
   open: boolean
@@ -20,13 +20,23 @@ export function UsersDeleteDialog({
   onOpenChange,
   currentRow,
 }: UserDeleteDialogProps) {
+  const { onDeleteUser } = useUsers()
   const [value, setValue] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleDelete = () => {
-    if (value.trim() !== currentRow.username) return
+  const handleDelete = async () => {
+    if (value.trim() !== currentRow.username || !onDeleteUser || !currentRow.id) return
 
-    onOpenChange(false)
-    showSubmittedData(currentRow, 'The following user has been deleted:')
+    setIsLoading(true)
+    try {
+      await onDeleteUser(currentRow.id)
+      onOpenChange(false)
+      setValue('')
+    } catch (error) {
+      console.error('Error deleting user:', error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -34,7 +44,7 @@ export function UsersDeleteDialog({
       open={open}
       onOpenChange={onOpenChange}
       handleConfirm={handleDelete}
-      disabled={value.trim() !== currentRow.username}
+      disabled={value.trim() !== currentRow.username || isLoading}
       title={
         <span className='text-destructive'>
           <AlertTriangle
@@ -52,7 +62,7 @@ export function UsersDeleteDialog({
             <br />
             This action will permanently remove the user with the role of{' '}
             <span className='font-bold'>
-              {currentRow.role.toUpperCase()}
+              {(currentRow.role_name || 'Unknown').toUpperCase()}
             </span>{' '}
             from the system. This cannot be undone.
           </p>
@@ -63,6 +73,7 @@ export function UsersDeleteDialog({
               value={value}
               onChange={(e) => setValue(e.target.value)}
               placeholder='Enter username to confirm deletion.'
+              disabled={isLoading}
             />
           </Label>
 
@@ -74,7 +85,7 @@ export function UsersDeleteDialog({
           </Alert>
         </div>
       }
-      confirmText='Delete'
+      confirmText={isLoading ? 'Deleting...' : 'Delete'}
       destructive
     />
   )
