@@ -18,11 +18,27 @@ import { UsersDialogs } from '@/features/users/components/users-dialogs'
 import { UsersPrimaryButtons } from '@/features/users/components/users-primary-buttons'
 import { UsersProvider } from '@/features/users/components/users-provider'
 import { UsersTable } from '@/features/users/components/users-table'
-import { users } from '@/features/users/data/users'
+import { users as clerkUsers } from '@/features/users/data/users'
 
 export const Route = createFileRoute('/clerk/_authenticated/user-management')({
   component: UserManagement,
 })
+
+// Map role names to role IDs
+const roleNameToId: Record<string, number> = {
+  superadmin: 1,
+  admin: 2,
+  cashier: 3,
+  manager: 4,
+}
+
+// Transform the clerkUsers data to match the expected format
+const formattedUsers = clerkUsers.map((user, index) => ({
+  id: index + 1,
+  username: user.username,
+  role_id: roleNameToId[user.role] || 0, // Default to 0 if role not found
+  role_name: user.role,
+}))
 
 function UserManagement() {
   const search = Route.useSearch()
@@ -89,7 +105,11 @@ function UserManagement() {
               <UsersPrimaryButtons />
             </div>
             <div className='-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-y-0 lg:space-x-12'>
-              <UsersTable data={users} navigate={navigate} search={search} />
+              <UsersTable
+                data={formattedUsers}
+                navigate={navigate}
+                search={search}
+              />
             </div>
           </Main>
 
